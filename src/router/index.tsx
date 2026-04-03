@@ -3,6 +3,7 @@ import { useAuthStore } from '../store/authStore'
 import AppLayout from '../components/layout/AppLayout'
 import LoginPage from '../pages/LoginPage'
 import RegisterPage from '../pages/RegisterPage'
+import DashboardPage from '../pages/DashboardPage'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -34,9 +35,8 @@ export default function Router() {
             <AppLayout />
           </PrivateRoute>
         }>
-          <Route path="/dashboard" element={
-            <div className="p-8 text-text-secondary">Dashboard — em breve</div>
-          } />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          
           <Route path="/transactions" element={
             <div className="p-8 text-text-secondary">Transações — em breve</div>
           } />
