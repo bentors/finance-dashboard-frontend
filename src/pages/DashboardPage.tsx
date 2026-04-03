@@ -1,63 +1,90 @@
 import { useQuery } from '@tanstack/react-query'
 import {
-  BarChart,
-  Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Cell,
+  CartesianGrid,
+  Line,
+  ComposedChart,
 } from 'recharts'
-import { TrendingUp, TrendingDown, Wallet } from 'lucide-react'
-import { getSummary, getMonthlySummary } from '../api/transactions'
-import { formatCurrency, } from '../utils/currency'
-import { getCurrentMonthRange, getMonthName } from '../utils/date'
+import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { getSummary, getMonthlySummary } from '@/api/transactions'
+import { formatCurrency } from '@/utils/currency'
+import { getCurrentMonthRange, getMonthName } from '@/utils/date'
 
 const { startDate, endDate } = getCurrentMonthRange()
 const currentYear = new Date().getFullYear()
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="bg-bg-card border border-border-app rounded-xl p-3 text-sm shadow-xl">
+      <p className="text-text-secondary mb-2 text-xs">{label}</p>
+      {payload.map((entry: any) => (
+        <div key={entry.name} className="flex items-center gap-2 mb-1">
+          <div className="w-2 h-2 rounded-full" style={{ background: entry.stroke ?? entry.fill }} />
+          <span className="text-text-secondary text-xs">
+            {entry.name === 'income' ? 'Receitas' : entry.name === 'expense' ? 'Despesas' : 'Tendência'}:
+          </span>
+          <span className="font-medium text-text-primary text-xs">
+            {entry.name === 'trend' ? '' : formatCurrency(entry.value)}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 function SummaryCard({
   title,
   value,
   icon: Icon,
+  trend,
   color,
   isLoading,
 }: {
   title: string
   value: number
   icon: React.ElementType
-  color: string
+  trend: 'up' | 'down' | 'neutral'
+  color: 'income' | 'expense' | 'accent'
   isLoading: boolean
 }) {
+  const colorMap = {
+    income:  { bg: 'bg-income/10',  text: 'text-income',  icon: 'text-income'  },
+    expense: { bg: 'bg-expense/10', text: 'text-expense', icon: 'text-expense' },
+    accent:  { bg: 'bg-accent/10',  text: 'text-accent',  icon: 'text-accent'  },
+  }
+
+  const TrendIcon = trend === 'up' ? ArrowUpRight : trend === 'down' ? ArrowDownRight : null
+  const c = colorMap[color]
+
   return (
-    <div className="bg-bg-card border border-border-app rounded-xl p-5 flex flex-col gap-3">
+    <div className="bg-bg-card border border-border-app rounded-2xl p-5 flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <span className="text-sm text-text-secondary">{title}</span>
-        <div className={`p-2 rounded-lg ${color}`}>
-          <Icon size={16} />
+        <div className={`w-9 h-9 rounded-xl ${c.bg} flex items-center justify-center`}>
+          <Icon size={16} className={c.icon} />
         </div>
       </div>
       {isLoading ? (
-        <div className="h-7 w-32 bg-bg-secondary rounded animate-pulse" />
+        <div className="h-8 w-36 bg-bg-secondary rounded-lg animate-pulse" />
       ) : (
-        <span className="text-2xl font-medium text-text-primary">
-          {formatCurrency(value)}
-        </span>
+        <div className="flex items-end justify-between">
+          <span className={`text-2xl font-medium ${c.text}`}>
+            {formatCurrency(value)}
+          </span>
+          {TrendIcon && (
+            <div className={`flex items-center gap-1 text-xs ${c.text} ${c.bg} px-2 py-1 rounded-lg`}>
+              <TrendIcon size={12} />
+              {trend === 'up' ? 'Entrada' : 'Saída'}
+            </div>
+          )}
+        </div>
       )}
-    </div>
-  )
-}
-
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="bg-bg-card border border-border-app rounded-lg p-3 text-sm">
-      <p className="text-text-secondary mb-2">{label}</p>
-      {payload.map((entry: any) => (
-        <p key={entry.name} style={{ color: entry.fill }} className="font-medium">
-          {entry.name === 'income' ? 'Receita' : 'Despesa'}: {formatCurrency(entry.value)}
-        </p>
-      ))}
     </div>
   )
 }
@@ -73,75 +100,119 @@ export default function DashboardPage() {
     queryFn: () => getMonthlySummary(currentYear),
   })
 
-  const chartData = monthly?.map((m) => ({
+  const rawData = monthly?.map((m) => ({
     name: getMonthName(m.month),
     income: m.income,
     expense: m.expense,
   })) ?? []
 
-  const balanceColor =
-    (summary?.balance ?? 0) >= 0 ? 'text-income' : 'text-expense'
+  // linha de tendência — média móvel simples entre receita e despesa
+  const chartData = rawData.map((d, i) => {
+    const slice = rawData.slice(0, i + 1)
+    const avg = slice.reduce((acc, s) => acc + (s.income - s.expense), 0) / slice.length
+    return { ...d, trend: Math.max(0, avg) }
+  })
+
+  const balance = summary?.balance ?? 0
+  const balancePositive = balance >= 0
+
+  const monthLabel = new Intl.DateTimeFormat('pt-BR', {
+    month: 'long', year: 'numeric',
+  }).format(new Date())
 
   return (
     <div className="p-8 flex flex-col gap-6">
 
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-medium text-text-primary">Dashboard</h1>
-        <p className="text-sm text-text-secondary mt-1">
-          Resumo de {new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date())}
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-xl font-medium text-text-primary">Dashboard</h1>
+          <p className="text-sm text-text-secondary mt-1 capitalize">{monthLabel}</p>
+        </div>
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium ${
+          balancePositive
+            ? 'bg-income/10 border-income/20 text-income'
+            : 'bg-expense/10 border-expense/20 text-expense'
+        }`}>
+          {balancePositive ? <TrendingUp size={15} /> : <TrendingDown size={15} />}
+          Saldo: {formatCurrency(balance)}
+        </div>
       </div>
 
-      {/* Summary cards */}
+      {/* Cards */}
       <div className="grid grid-cols-3 gap-4">
         <SummaryCard
-          title="Receitas"
+          title="Receitas do mês"
           value={summary?.totalIncome ?? 0}
           icon={TrendingUp}
-          color="bg-income/10 text-income"
+          trend="up"
+          color="income"
           isLoading={summaryLoading}
         />
         <SummaryCard
-          title="Despesas"
+          title="Despesas do mês"
           value={summary?.totalExpense ?? 0}
           icon={TrendingDown}
-          color="bg-expense/10 text-expense"
+          trend="down"
+          color="expense"
           isLoading={summaryLoading}
         />
         <SummaryCard
-          title="Saldo"
-          value={summary?.balance ?? 0}
+          title="Saldo atual"
+          value={balance}
           icon={Wallet}
-          color="bg-accent/10 text-accent"
+          trend="neutral"
+          color="accent"
           isLoading={summaryLoading}
         />
       </div>
 
-      {/* Saldo com cor dinâmica */}
-      {!summaryLoading && (
-        <div className="bg-bg-card border border-border-app rounded-xl p-5">
-          <p className="text-sm text-text-secondary mb-1">Saldo do mês</p>
-          <p className={`text-3xl font-medium ${balanceColor}`}>
-            {formatCurrency(summary?.balance ?? 0)}
-          </p>
-        </div>
-      )}
-
-      {/* Gráfico mensal */}
-      <div className="bg-bg-card border border-border-app rounded-xl p-5">
-        <div className="mb-5">
-          <h2 className="text-sm font-medium text-text-primary">Evolução mensal</h2>
-          <p className="text-xs text-text-secondary mt-0.5">Receitas e despesas em {currentYear}</p>
+      {/* Gráfico */}
+      <div className="bg-bg-card border border-border-app rounded-2xl p-6">
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h2 className="text-sm font-medium text-text-primary">Evolução financeira</h2>
+            <p className="text-xs text-text-secondary mt-0.5">Receitas e despesas em {currentYear}</p>
+          </div>
+          <div className="flex items-center gap-5">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-income" />
+              <span className="text-xs text-text-secondary">Receitas</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-expense" />
+              <span className="text-xs text-text-secondary">Despesas</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-accent" />
+              <span className="text-xs text-text-secondary">Tendência</span>
+            </div>
+          </div>
         </div>
 
         {monthlyLoading ? (
-          <div className="h-56 flex items-center justify-center">
+          <div className="h-64 flex items-center justify-center">
             <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={224}>
-            <BarChart data={chartData} barGap={4} barSize={10}>
+          <ResponsiveContainer width="100%" height={256}>
+            <ComposedChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#22C55E" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#22C55E" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#EF4444" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#EF4444" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="#3F3F46"
+                opacity={0.4}
+                vertical={false}
+              />
               <XAxis
                 dataKey="name"
                 tick={{ fill: '#A1A1AA', fontSize: 12 }}
@@ -153,34 +224,39 @@ export default function DashboardPage() {
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
-                width={48}
+                width={52}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-              <Bar dataKey="income" radius={[4, 4, 0, 0]}>
-                {chartData.map((_, i) => (
-                  <Cell key={i} fill="#22C55E" opacity={0.85} />
-                ))}
-              </Bar>
-              <Bar dataKey="expense" radius={[4, 4, 0, 0]}>
-                {chartData.map((_, i) => (
-                  <Cell key={i} fill="#EF4444" opacity={0.85} />
-                ))}
-              </Bar>
-            </BarChart>
+              <Tooltip content={<CustomTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="income"
+                stroke="#22C55E"
+                strokeWidth={2.5}
+                fill="url(#incomeGrad)"
+                dot={false}
+                activeDot={{ r: 4, fill: '#22C55E', strokeWidth: 0 }}
+              />
+              <Area
+                type="monotone"
+                dataKey="expense"
+                stroke="#EF4444"
+                strokeWidth={2}
+                fill="url(#expenseGrad)"
+                dot={false}
+                activeDot={{ r: 4, fill: '#EF4444', strokeWidth: 0 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="trend"
+                stroke="#6C63FF"
+                strokeWidth={2}
+                strokeDasharray="5 4"
+                dot={false}
+                activeDot={{ r: 4, fill: '#6C63FF', strokeWidth: 0 }}
+              />
+            </ComposedChart>
           </ResponsiveContainer>
         )}
-
-        {/* Legenda */}
-        <div className="flex items-center gap-5 mt-4">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-sm bg-income" />
-            <span className="text-xs text-text-secondary">Receitas</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-sm bg-expense" />
-            <span className="text-xs text-text-secondary">Despesas</span>
-          </div>
-        </div>
       </div>
 
     </div>
