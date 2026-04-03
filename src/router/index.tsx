@@ -5,6 +5,7 @@ import LoginPage from '../pages/LoginPage'
 import RegisterPage from '../pages/RegisterPage'
 import DashboardPage from '../pages/DashboardPage'
 import TransactionsPage from '../pages/TransactionsPage'
+import CategoriesPage from '@/pages/CategoriesPage'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -40,9 +41,8 @@ export default function Router() {
 
           <Route path="/transactions" element={<TransactionsPage />} />
           
-          <Route path="/categories" element={
-            <div className="p-8 text-text-secondary">Categorias — em breve</div>
-          } />
+          <Route path="/categories" element={<CategoriesPage />} />
+          
         </Route>
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
