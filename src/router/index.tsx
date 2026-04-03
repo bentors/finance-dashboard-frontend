@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import AppLayout from '../components/layout/AppLayout'
 import LoginPage from '../pages/LoginPage'
 import RegisterPage from '../pages/RegisterPage'
 
@@ -27,23 +28,22 @@ export default function Router() {
           <PublicRoute><RegisterPage /></PublicRoute>
         } />
 
-        <Route path="/dashboard" element={
+        {/* Rotas protegidas — todas dentro do AppLayout */}
+        <Route element={
           <PrivateRoute>
-            <div className="p-8 text-gray-600">Dashboard — em breve</div>
+            <AppLayout />
           </PrivateRoute>
-        } />
-
-        <Route path="/transactions" element={
-          <PrivateRoute>
-            <div className="p-8 text-gray-600">Transações — em breve</div>
-          </PrivateRoute>
-        } />
-
-        <Route path="/categories" element={
-          <PrivateRoute>
-            <div className="p-8 text-gray-600">Categorias — em breve</div>
-          </PrivateRoute>
-        } />
+        }>
+          <Route path="/dashboard" element={
+            <div className="p-8 text-text-secondary">Dashboard — em breve</div>
+          } />
+          <Route path="/transactions" element={
+            <div className="p-8 text-text-secondary">Transações — em breve</div>
+          } />
+          <Route path="/categories" element={
+            <div className="p-8 text-text-secondary">Categorias — em breve</div>
+          } />
+        </Route>
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
