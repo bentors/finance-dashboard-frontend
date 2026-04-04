@@ -90,3 +90,13 @@ export async function exportTransactionsCsv(startDate: string, endDate: string) 
   link.remove()
   window.URL.revokeObjectURL(url)
 }
+
+export async function getTransactionsByCategory(
+  startDate: string,
+  endDate: string
+) {
+  const response = await api.get<Page<TransactionResponseDTO>>('/transactions/period', {
+    params: { startDate, endDate, page: 0, size: 100, sort: 'transactionDate,desc' },
+  })
+  return response.data.content
+}
