@@ -17,3 +17,22 @@ body {
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
 }
+
+/* Customização da Scrollbar para combinar com o Tema */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-primary); 
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-app); 
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary); 
+}

@@ -24,30 +24,30 @@ function CandlestickDecoration() {
   ]
 
   return (
-    <svg width="380" height="260" viewBox="0 0 380 260" className="opacity-20">
+    <svg width="380" height="260" viewBox="0 0 380 260" className="opacity-30 drop-shadow-md">
       {candles.map((c, i) => (
         <g key={i}>
           <line
             x1={c.x} y1={c.y}
             x2={c.x} y2={c.y + c.h}
-            stroke={c.bull ? '#22C55E' : '#EF4444'}
+            stroke={c.bull ? 'var(--color-income)' : 'var(--color-expense)'}
             strokeWidth="1.5"
           />
           <rect
             x={c.x - 8} y={c.by}
             width="16" height={c.body}
             rx="2"
-            fill={c.bull ? '#22C55E' : '#EF4444'}
-            opacity="0.8"
+            fill={c.bull ? 'var(--color-income)' : 'var(--color-expense)'}
+            opacity="0.85"
           />
         </g>
       ))}
       <polyline
         points="30,150 70,120 110,160 150,100 190,130 230,110 270,140 310,85"
         fill="none"
-        stroke="#6C63FF"
-        strokeWidth="2"
-        opacity="0.6"
+        stroke="var(--color-accent)"
+        strokeWidth="2.5"
+        opacity="0.8"
       />
     </svg>
   )
@@ -84,106 +84,113 @@ export default function LoginPage() {
     <div className="min-h-screen flex bg-bg-primary">
 
       {/* Painel esquerdo — branding */}
-      <div className="hidden lg:flex flex-1 flex-col justify-between p-12 border-r border-border-app">
+      <div className="hidden lg:flex flex-1 flex-col justify-between p-12 border-r border-border-app relative overflow-hidden bg-bg-primary/40">
+        
+        {/* Glow de fundo */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent/5 blur-[120px] rounded-full pointer-events-none" />
 
         {/* Logo */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
-            <TrendingUp size={16} className="text-white" />
+        <div className="flex items-center gap-2.5 relative z-10">
+          <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shadow-[0_0_15px_rgba(108,99,255,0.15)]">
+            <TrendingUp size={20} className="text-accent" />
           </div>
-          <span className="text-text-primary font-medium text-base">Aurum</span>
+          <span className="text-text-primary font-medium text-lg tracking-wide">Aurum</span>
         </div>
 
         {/* Centro — tagline */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-8 relative z-10">
           <CandlestickDecoration />
           <div>
-            <h1 className="text-3xl font-medium text-text-primary leading-snug">
+            <h1 className="text-4xl font-medium text-text-primary leading-tight tracking-tight">
               Controle suas finanças<br />
               <span className="text-accent">com clareza.</span>
             </h1>
-            <p className="text-text-secondary text-sm mt-3 leading-relaxed max-w-xs">
+            <p className="text-text-secondary text-base mt-4 leading-relaxed max-w-sm">
               Acompanhe receitas, despesas e evolução patrimonial em um só lugar.
             </p>
           </div>
         </div>
 
         {/* Rodapé */}
-        <p className="text-xs text-text-secondary">
+        <p className="text-xs text-text-secondary relative z-10">
           © {new Date().getFullYear()} Aurum Personal Finance
         </p>
 
       </div>
 
       {/* Painel direito — formulário */}
-      <div className="flex flex-1 flex-col items-center justify-center px-8 py-12">
+      <div className="flex flex-1 flex-col items-center justify-center px-8 py-12 relative">
 
         {/* Logo mobile */}
         <div className="flex lg:hidden items-center gap-2.5 mb-10">
-          <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
-            <TrendingUp size={16} className="text-white" />
+          <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shadow-[0_0_15px_rgba(108,99,255,0.15)]">
+            <TrendingUp size={20} className="text-accent" />
           </div>
-          <span className="text-text-primary font-medium text-base">Aurum</span>
+          <span className="text-text-primary font-medium text-lg tracking-wide">Aurum</span>
         </div>
 
         <div className="w-full max-w-sm">
 
-          <div className="mb-8">
+          <div className="mb-10">
             <h2 className="text-2xl font-medium text-text-primary">Acesse sua conta</h2>
-            <p className="text-sm text-text-secondary mt-1.5">Insira suas credenciais para continuar</p>
+            <p className="text-sm text-text-secondary mt-2">Insira suas credenciais para continuar</p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
 
+            {/* Campo E-mail */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-text-secondary">E-mail</label>
-              <div className="relative">
-                <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
+              <label className="text-xs font-medium text-text-secondary uppercase tracking-wider ml-1">E-mail</label>
+              <div className="relative group">
+                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary group-focus-within:text-accent transition-colors" />
                 <input
                   type="email"
                   placeholder="seu@email.com"
-                  className="w-full bg-bg-card border border-border-app rounded-lg pl-9 pr-3 py-2.5 text-sm text-text-primary placeholder:text-text-secondary outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+                  className="w-full bg-bg-card border border-border-app rounded-xl pl-10 pr-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/50 outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
                   {...register('email', { required: 'E-mail obrigatório' })}
                 />
               </div>
               {errors.email && (
-                <span className="text-xs text-expense">{errors.email.message}</span>
+                <span className="text-xs text-expense ml-1">{errors.email.message}</span>
               )}
             </div>
 
+            {/* Campo Senha */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-text-secondary">Senha</label>
-              <div className="relative">
-                <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
+              <label className="text-xs font-medium text-text-secondary uppercase tracking-wider ml-1">Senha</label>
+              <div className="relative group">
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary group-focus-within:text-accent transition-colors" />
                 <input
                   type="password"
                   placeholder="••••••••"
-                  className="w-full bg-bg-card border border-border-app rounded-lg pl-9 pr-3 py-2.5 text-sm text-text-primary placeholder:text-text-secondary outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+                  className="w-full bg-bg-card border border-border-app rounded-xl pl-10 pr-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/50 outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
                   {...register('password', { required: 'Senha obrigatória' })}
                 />
               </div>
               {errors.password && (
-                <span className="text-xs text-expense">{errors.password.message}</span>
+                <span className="text-xs text-expense ml-1">{errors.password.message}</span>
               )}
             </div>
 
+            {/* Mensagem de erro */}
             {serverError && (
-              <div className="bg-expense/10 border border-expense/20 rounded-lg px-3 py-2.5">
-                <p className="text-xs text-expense">{serverError}</p>
+              <div className="bg-expense/10 border border-expense/20 rounded-xl px-4 py-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                <p className="text-sm font-medium text-expense text-center">{serverError}</p>
               </div>
             )}
 
+            {/* Botão primário */}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="mt-1 w-full bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-lg py-2.5 transition-colors disabled:opacity-50 cursor-pointer"
+              className="mt-2 w-full bg-accent hover:bg-accent-hover text-white text-sm font-medium rounded-xl py-3.5 shadow-[0_4px_14px_0_rgba(108,99,255,0.2)] hover:shadow-[0_6px_20px_rgba(108,99,255,0.3)] transition-all duration-300 disabled:opacity-50 disabled:shadow-none cursor-pointer"
             >
-              {isSubmitting ? 'Entrando...' : 'Entrar'}
+              {isSubmitting ? 'Autenticando...' : 'Entrar'}
             </button>
 
           </form>
 
-          <p className="text-xs text-text-secondary text-center mt-6">
+          <p className="text-sm text-text-secondary text-center mt-8">
             Não tem conta?{' '}
             <Link to="/register" className="text-accent hover:text-accent-hover font-medium transition-colors">
               Criar conta

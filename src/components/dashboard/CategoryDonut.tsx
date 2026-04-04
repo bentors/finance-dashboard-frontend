@@ -6,26 +6,38 @@ const CustomTooltip = ({ active, payload }: any) => {
   if (!active || !payload?.length) return null
   const d = payload[0].payload as CategoryBreakdown
   return (
-    <div className="bg-bg-card border border-border-app rounded-xl p-3 shadow-xl">
-      <div className="flex items-center gap-2 mb-1">
-        <div className="w-2 h-2 rounded-full" style={{ background: d.color }} />
-        <span className="text-xs font-medium text-text-primary">{d.name}</span>
+    <div className="bg-bg-card/90 backdrop-blur-md border border-border-app/50 rounded-xl p-3.5 shadow-[0_8px_30px_rgb(0,0,0,0.5)] z-50 min-w-[140px]">
+      <div className="flex items-center gap-2.5 mb-3">
+        <div 
+          className="w-2.5 h-2.5 rounded-full shadow-sm" 
+          style={{ background: d.color, boxShadow: `0 0 8px ${d.color}80` }} 
+        />
+        <span className="text-xs font-semibold text-text-primary tracking-wide">{d.name}</span>
       </div>
-      <p className="text-xs text-text-secondary">{formatCurrency(d.value)}</p>
-      <p className="text-xs text-text-secondary">{d.percentage}% do total</p>
+      <div className="flex flex-col gap-1">
+        <p className="text-[10px] text-text-secondary uppercase tracking-wider font-medium">Valor gasto</p>
+        <p className="text-sm font-medium text-text-primary">{formatCurrency(d.value)}</p>
+      </div>
+      <div className="h-px w-full bg-border-app/40 my-2.5" />
+      <div className="flex justify-between items-center">
+        <p className="text-xs text-text-secondary">Representação</p>
+        <p className="text-xs font-semibold text-text-primary">{d.percentage}%</p>
+      </div>
     </div>
   )
 }
 
 function DonutSkeleton() {
   return (
-    <div className="flex items-center gap-6">
-      <div className="w-36 h-36 rounded-full bg-bg-secondary animate-pulse flex-shrink-0" />
-      <div className="flex flex-col gap-2 flex-1">
+    <div className="flex items-center gap-8 w-full py-2">
+      <div className="w-40 h-40 rounded-full bg-bg-primary border border-border-app/30 shadow-inner flex-shrink-0 animate-pulse flex items-center justify-center relative">
+        <div className="w-24 h-24 rounded-full bg-bg-card" />
+      </div>
+      <div className="flex flex-col gap-3.5 flex-1">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-bg-secondary animate-pulse" />
-            <div className="h-3 bg-bg-secondary rounded animate-pulse" style={{ width: `${60 - i * 10}%` }} />
+          <div key={i} className="flex items-center gap-3">
+            <div className="w-2.5 h-2.5 rounded-full bg-bg-secondary animate-pulse shadow-sm" />
+            <div className="h-2.5 bg-bg-secondary rounded-full animate-pulse" style={{ width: `${70 - i * 15}%` }} />
           </div>
         ))}
       </div>
@@ -35,11 +47,14 @@ function DonutSkeleton() {
 
 function EmptyDonut() {
   return (
-    <div className="flex flex-col items-center justify-center py-8 gap-2">
-      <div className="w-24 h-24 rounded-full border-4 border-dashed border-border-app flex items-center justify-center">
-        <span className="text-xs text-text-secondary text-center leading-tight">sem<br/>despesas</span>
+    <div className="flex flex-col items-center justify-center py-6 gap-4 w-full">
+      <div className="w-32 h-32 rounded-full border-2 border-dashed border-border-app/40 flex flex-col items-center justify-center relative">
+        <div className="absolute inset-0 bg-bg-primary/40 blur-xl rounded-full" />
+        <span className="text-[10px] font-semibold text-text-secondary text-center uppercase tracking-widest relative z-10 opacity-60">
+          Sem<br/>Dados
+        </span>
       </div>
-      <p className="text-xs text-text-secondary mt-2">Nenhuma despesa registrada este mês</p>
+      <p className="text-xs text-text-secondary mt-1">Nenhuma despesa registrada este mês</p>
     </div>
   )
 }
@@ -56,57 +71,68 @@ export default function CategoryDonut({ data, isLoading }: Props) {
   const total = data.reduce((acc, d) => acc + d.value, 0)
 
   return (
-    <div className="flex items-center gap-6">
+    <div className="flex items-center gap-8 w-full">
 
       {/* Gráfico */}
-      <div className="relative flex-shrink-0 w-36 h-36">
+      <div className="relative flex-shrink-0 w-40 h-40">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={44}
-              outerRadius={66}
-              paddingAngle={2}
+              innerRadius={54}
+              outerRadius={76}
+              paddingAngle={3}
               dataKey="value"
-              strokeWidth={0}
+              stroke="none" // Remove a borda padrão para deixar o paddingAngle fazer o trabalho
             >
               {data.map((entry, i) => (
-                <Cell key={i} fill={entry.color} />
+                <Cell 
+                  key={i} 
+                  fill={entry.color} 
+                  style={{ filter: `drop-shadow(0px 2px 4px ${entry.color}40)` }} 
+                />
               ))}
             </Pie>
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
           </PieChart>
         </ResponsiveContainer>
 
         {/* Centro — total */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-xs text-text-secondary leading-tight">total</span>
-          <span className="text-sm font-medium text-text-primary leading-tight">
+          <span className="text-[10px] uppercase tracking-wider font-medium text-text-secondary mb-0.5">total</span>
+          <span className="text-base font-semibold text-text-primary tracking-tight">
             {formatCurrency(total)}
           </span>
         </div>
       </div>
 
       {/* Legenda */}
-      <div className="flex flex-col gap-2 flex-1 min-w-0">
-        {data.slice(0, 6).map((item) => (
-          <div key={item.name} className="flex items-center gap-2">
+      <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+        {data.slice(0, 5).map((item) => (
+          <div 
+            key={item.name} 
+            className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-white/[0.02] transition-colors group cursor-default"
+          >
             <div
-              className="w-2 h-2 rounded-full flex-shrink-0"
-              style={{ background: item.color }}
+              className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm transition-transform duration-300 group-hover:scale-110"
+              style={{ background: item.color, boxShadow: `0 0 8px ${item.color}80` }}
             />
-            <span className="text-xs text-text-secondary truncate flex-1">{item.name}</span>
-            <span className="text-xs font-medium text-text-primary flex-shrink-0">
+            <span className="text-sm text-text-secondary truncate flex-1 group-hover:text-text-primary transition-colors">
+              {item.name}
+            </span>
+            <span className="text-sm font-semibold text-text-primary flex-shrink-0">
               {item.percentage}%
             </span>
           </div>
         ))}
-        {data.length > 6 && (
-          <span className="text-xs text-text-secondary">
-            +{data.length - 6} outras categorias
-          </span>
+        {data.length > 5 && (
+          <div className="px-2 mt-1">
+            <span className="text-xs font-medium text-text-secondary/70">
+              +{data.length - 5} outras categorias
+            </span>
+          </div>
         )}
       </div>
 
