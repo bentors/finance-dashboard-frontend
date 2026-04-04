@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, Tag } from 'lucide-react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import {
   getCategories,
   createCategory,
@@ -9,6 +9,7 @@ import {
   deleteCategory,
 } from '@/api/categories'
 import type { CategoryResponseDTO, CategoryType } from '@/types/api'
+import { toast } from 'sonner'
 
 type FormData = {
   name: string
@@ -33,7 +34,6 @@ export default function CategoriesPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<CategoryResponseDTO | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
-  const [defaultType, setDefaultType] = useState<CategoryType>('INCOME')
 
   const { data, isLoading } = useQuery({
     queryKey: ['categories'],
@@ -48,14 +48,22 @@ export default function CategoriesPage() {
     register,
     handleSubmit,
     reset,
+    control,
+    setValue,
     formState: { errors, isSubmitting },
-  } = useForm<FormData>()
+  } = useForm<FormData>({ defaultValues: { type: 'INCOME' } })
+
+  const selectedType = useWatch({ control, name: 'type' })
 
   const createMutation = useMutation({
     mutationFn: createCategory,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
+      toast.success('Categoria criada com sucesso')
       closeModal()
+    },
+    onError: () => {
+      toast.error('Erro ao criar categoria')
     },
   })
 
@@ -64,7 +72,11 @@ export default function CategoriesPage() {
       updateCategory(id, dto),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
+      toast.success('Categoria atualizada com sucesso')
       closeModal()
+    },
+    onError: () => {
+      toast.error('Erro ao atualizar categoria')
     },
   })
 
@@ -72,13 +84,16 @@ export default function CategoriesPage() {
     mutationFn: deleteCategory,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
+      toast.success('Categoria excluída')
       setDeleteConfirm(null)
+    },
+    onError: () => {
+      toast.error('Erro ao excluir categoria')
     },
   })
 
   function openCreate(type: CategoryType) {
     setEditing(null)
-    setDefaultType(type)
     reset({ name: '', type })
     setModalOpen(true)
   }
@@ -284,29 +299,29 @@ export default function CategoriesPage() {
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm text-text-secondary">Tipo</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {(['INCOME', 'EXPENSE'] as CategoryType[]).map((type) => (
-                    <label
-                      key={type}
-                      className="relative cursor-pointer"
-                    >
-                      <input
-                        type="radio"
-                        value={type}
-                        className="sr-only peer"
-                        {...register('type', { required: true })}
-                      />
-                      <div className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border text-sm transition-all
-                        peer-checked:border-${type === 'INCOME' ? 'income' : 'expense'}/40
-                        peer-checked:bg-${type === 'INCOME' ? 'income' : 'expense'}/10
-                        peer-checked:text-${type === 'INCOME' ? 'income' : 'expense'}
-                        border-border-app text-text-secondary hover:bg-bg-secondary`}
+                  {(['INCOME', 'EXPENSE'] as CategoryType[]).map((type) => {
+                    const isSelected = selectedType === type
+                    const isIncome = type === 'INCOME'
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setValue('type', type)}
+                        className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border text-sm transition-all ${
+                          isSelected
+                            ? isIncome
+                              ? 'border-income/40 bg-income/10 text-income'
+                              : 'border-expense/40 bg-expense/10 text-expense'
+                            : 'border-border-app text-text-secondary hover:bg-bg-secondary'
+                        }`}
                       >
-                        <div className={`w-1.5 h-1.5 rounded-full ${type === 'INCOME' ? 'bg-income' : 'bg-expense'}`} />
-                        {type === 'INCOME' ? 'Receita' : 'Despesa'}
-                      </div>
-                    </label>
-                  ))}
+                        <div className={`w-1.5 h-1.5 rounded-full ${isIncome ? 'bg-income' : 'bg-expense'}`} />
+                        {isIncome ? 'Receita' : 'Despesa'}
+                      </button>
+                    )
+                  })}
                 </div>
+                <input type="hidden" {...register('type', { required: true })} />
               </div>
 
               <div className="flex gap-3 mt-2">

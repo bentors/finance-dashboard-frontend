@@ -13,6 +13,7 @@ import { useCategories } from '@/hooks/useCategories'
 import { formatCurrency } from '@/utils/currency'
 import { formatDate, getCurrentMonthRange } from '@/utils/date'
 import type { TransactionResponseDTO } from '@/types/api'
+import { toast } from 'sonner'
 
 type FormData = {
   description: string
@@ -65,33 +66,51 @@ export default function TransactionsPage() {
   const createMutation = useMutation({
     mutationFn: createTransaction,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
-      queryClient.invalidateQueries({ queryKey: ['summary'] })
-      queryClient.invalidateQueries({ queryKey: ['monthly-summary'] })
-      closeModal()
+        queryClient.invalidateQueries({ queryKey: ['transactions'] })
+        queryClient.invalidateQueries({ queryKey: ['summary'] })
+        queryClient.invalidateQueries({ queryKey: ['monthly-summary'] })
+        queryClient.invalidateQueries({ queryKey: ['recent-transactions'] })
+        queryClient.invalidateQueries({ queryKey: ['category-breakdown'] })
+        toast.success('Transação criada com sucesso')
+        closeModal()
     },
-  })
+    onError: () => {
+        toast.error('Erro ao criar transação')
+    },
+    })  
 
-  const updateMutation = useMutation({
+    const updateMutation = useMutation({
     mutationFn: ({ id, dto }: { id: string; dto: FormData }) =>
-      updateTransaction(id, dto),
+        updateTransaction(id, dto),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
-      queryClient.invalidateQueries({ queryKey: ['summary'] })
-      queryClient.invalidateQueries({ queryKey: ['monthly-summary'] })
-      closeModal()
+        queryClient.invalidateQueries({ queryKey: ['transactions'] })
+        queryClient.invalidateQueries({ queryKey: ['summary'] })
+        queryClient.invalidateQueries({ queryKey: ['monthly-summary'] })
+        queryClient.invalidateQueries({ queryKey: ['recent-transactions'] })
+        queryClient.invalidateQueries({ queryKey: ['category-breakdown'] })
+        toast.success('Transação atualizada com sucesso')
+        closeModal()
     },
-  })
+    onError: () => {
+        toast.error('Erro ao atualizar transação')
+    },
+    })
 
-  const deleteMutation = useMutation({
+    const deleteMutation = useMutation({
     mutationFn: deleteTransaction,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
-      queryClient.invalidateQueries({ queryKey: ['summary'] })
-      queryClient.invalidateQueries({ queryKey: ['monthly-summary'] })
-      setDeleteConfirm(null)
+        queryClient.invalidateQueries({ queryKey: ['transactions'] })
+        queryClient.invalidateQueries({ queryKey: ['summary'] })
+        queryClient.invalidateQueries({ queryKey: ['monthly-summary'] })
+        queryClient.invalidateQueries({ queryKey: ['recent-transactions'] })
+        queryClient.invalidateQueries({ queryKey: ['category-breakdown'] })
+        toast.success('Transação excluída')
+        setDeleteConfirm(null)
     },
-  })
+    onError: () => {
+        toast.error('Erro ao excluir transação')
+    },
+    })
 
   function openCreate() {
     setEditing(null)

@@ -15,6 +15,7 @@ import { formatCurrency } from '@/utils/currency'
 import { getCurrentMonthRange, getMonthName } from '@/utils/date'
 import { useCategoryBreakdown } from '@/hooks/useCategoryBreakdown'
 import CategoryDonut from '@/components/dashboard/CategoryDonut'
+import RecentTransactions from '@/components/dashboard/RecentTransactions'
 
 const { startDate, endDate } = getCurrentMonthRange()
 const currentYear = new Date().getFullYear()
@@ -280,7 +281,10 @@ export default function DashboardPage() {
             </ComposedChart>
           </ResponsiveContainer>
         )}
+        
       </div>
+      
+      <RecentTransactions />
 
     </div>
   )

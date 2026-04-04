@@ -100,3 +100,10 @@ export async function getTransactionsByCategory(
   })
   return response.data.content
 }
+
+export async function getRecentTransactions() {
+  const response = await api.get<Page<TransactionResponseDTO>>('/transactions', {
+    params: { page: 0, size: 5, sort: 'transactionDate,desc' },
+  })
+  return response.data.content
+}
