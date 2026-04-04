@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import {
-  AreaChart,
+  ComposedChart,
   Area,
   XAxis,
   YAxis,
@@ -8,12 +8,13 @@ import {
   ResponsiveContainer,
   CartesianGrid,
   Line,
-  ComposedChart,
 } from 'recharts'
 import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { getSummary, getMonthlySummary } from '@/api/transactions'
 import { formatCurrency } from '@/utils/currency'
 import { getCurrentMonthRange, getMonthName } from '@/utils/date'
+import { useCategoryBreakdown } from '@/hooks/useCategoryBreakdown'
+import CategoryDonut from '@/components/dashboard/CategoryDonut'
 
 const { startDate, endDate } = getCurrentMonthRange()
 const currentYear = new Date().getFullYear()
@@ -100,13 +101,14 @@ export default function DashboardPage() {
     queryFn: () => getMonthlySummary(currentYear),
   })
 
+  const { data: breakdown, isLoading: breakdownLoading } = useCategoryBreakdown()
+
   const rawData = monthly?.map((m) => ({
     name: getMonthName(m.month),
     income: m.income,
     expense: m.expense,
   })) ?? []
 
-  // linha de tendência — média móvel simples entre receita e despesa
   const chartData = rawData.map((d, i) => {
     const slice = rawData.slice(0, i + 1)
     const avg = slice.reduce((acc, s) => acc + (s.income - s.expense), 0) / slice.length
@@ -141,7 +143,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Cards */}
+      {/* Cards de resumo */}
       <div className="grid grid-cols-3 gap-4">
         <SummaryCard
           title="Receitas do mês"
@@ -169,7 +171,66 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Gráfico */}
+      {/* Donut + maior gasto */}
+      <div className="grid grid-cols-3 gap-4">
+
+        <div className="col-span-2 bg-bg-card border border-border-app rounded-2xl p-6">
+          <div className="mb-4">
+            <h2 className="text-sm font-medium text-text-primary">Gastos por categoria</h2>
+            <p className="text-xs text-text-secondary mt-0.5">Despesas do mês atual</p>
+          </div>
+          <CategoryDonut
+            data={breakdown ?? []}
+            isLoading={breakdownLoading}
+          />
+        </div>
+
+        <div className="bg-bg-card border border-border-app rounded-2xl p-6 flex flex-col gap-4">
+          <div>
+            <h2 className="text-sm font-medium text-text-primary">Maior gasto</h2>
+            <p className="text-xs text-text-secondary mt-0.5">Categoria do mês</p>
+          </div>
+          {breakdownLoading ? (
+            <div className="flex flex-col gap-2">
+              <div className="h-5 w-24 bg-bg-secondary rounded animate-pulse" />
+              <div className="h-8 w-32 bg-bg-secondary rounded animate-pulse" />
+              <div className="h-3 w-full bg-bg-secondary rounded animate-pulse mt-2" />
+            </div>
+          ) : breakdown && breakdown.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  style={{ background: breakdown[0].color }}
+                />
+                <span className="text-sm font-medium text-text-primary">{breakdown[0].name}</span>
+              </div>
+              <span className="text-2xl font-medium text-expense">
+                {formatCurrency(breakdown[0].value)}
+              </span>
+              <div className="flex flex-col gap-1.5">
+                <div className="h-1.5 bg-bg-secondary rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${breakdown[0].percentage}%`,
+                      background: breakdown[0].color,
+                    }}
+                  />
+                </div>
+                <span className="text-xs text-text-secondary">
+                  {breakdown[0].percentage}% das despesas totais
+                </span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-text-secondary">Nenhuma despesa este mês</p>
+          )}
+        </div>
+
+      </div>
+
+      {/* Gráfico de evolução */}
       <div className="bg-bg-card border border-border-app rounded-2xl p-6">
         <div className="flex items-start justify-between mb-6">
           <div>
@@ -209,53 +270,13 @@ export default function DashboardPage() {
                   <stop offset="95%" stopColor="#EF4444" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#3F3F46"
-                opacity={0.4}
-                vertical={false}
-              />
-              <XAxis
-                dataKey="name"
-                tick={{ fill: '#A1A1AA', fontSize: 12 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fill: '#A1A1AA', fontSize: 12 }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
-                width={52}
-              />
+              <CartesianGrid strokeDasharray="3 3" stroke="#3F3F46" opacity={0.4} vertical={false} />
+              <XAxis dataKey="name" tick={{ fill: '#A1A1AA', fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: '#A1A1AA', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} width={52} />
               <Tooltip content={<CustomTooltip />} />
-              <Area
-                type="monotone"
-                dataKey="income"
-                stroke="#22C55E"
-                strokeWidth={2.5}
-                fill="url(#incomeGrad)"
-                dot={false}
-                activeDot={{ r: 4, fill: '#22C55E', strokeWidth: 0 }}
-              />
-              <Area
-                type="monotone"
-                dataKey="expense"
-                stroke="#EF4444"
-                strokeWidth={2}
-                fill="url(#expenseGrad)"
-                dot={false}
-                activeDot={{ r: 4, fill: '#EF4444', strokeWidth: 0 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="trend"
-                stroke="#6C63FF"
-                strokeWidth={2}
-                strokeDasharray="5 4"
-                dot={false}
-                activeDot={{ r: 4, fill: '#6C63FF', strokeWidth: 0 }}
-              />
+              <Area type="monotone" dataKey="income" stroke="#22C55E" strokeWidth={2.5} fill="url(#incomeGrad)" dot={false} activeDot={{ r: 4, fill: '#22C55E', strokeWidth: 0 }} />
+              <Area type="monotone" dataKey="expense" stroke="#EF4444" strokeWidth={2} fill="url(#expenseGrad)" dot={false} activeDot={{ r: 4, fill: '#EF4444', strokeWidth: 0 }} />
+              <Line type="monotone" dataKey="trend" stroke="#6C63FF" strokeWidth={2} strokeDasharray="5 4" dot={false} activeDot={{ r: 4, fill: '#6C63FF', strokeWidth: 0 }} />
             </ComposedChart>
           </ResponsiveContainer>
         )}
