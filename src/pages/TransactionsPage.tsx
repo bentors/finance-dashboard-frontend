@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Pencil, Trash2, Download } from 'lucide-react'
+import { Plus, Pencil, Trash2, Download, Search, SlidersHorizontal } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import {
   getTransactions,
@@ -21,12 +21,29 @@ type FormData = {
   categoryId: string
 }
 
+function EmptyState() {
+  return (
+    <tr>
+      <td colSpan={5}>
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-bg-secondary flex items-center justify-center">
+            <SlidersHorizontal size={20} className="text-text-secondary" />
+          </div>
+          <p className="text-sm font-medium text-text-primary">Nenhuma transação encontrada</p>
+          <p className="text-xs text-text-secondary">Crie sua primeira transação clicando em "Nova transação"</p>
+        </div>
+      </td>
+    </tr>
+  )
+}
+
 export default function TransactionsPage() {
   const queryClient = useQueryClient()
   const [page, setPage] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<TransactionResponseDTO | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
 
   const { startDate, endDate } = getCurrentMonthRange()
 
@@ -113,29 +130,37 @@ export default function TransactionsPage() {
   }
 
   const totalPages = data?.totalPages ?? 1
+  const totalElements = data?.totalElements ?? 0
+
+  const filteredContent = (data?.content ?? []).filter((tx) =>
+    tx.description.toLowerCase().includes(search.toLowerCase()) ||
+    tx.category.name.toLowerCase().includes(search.toLowerCase())
+  )
 
   return (
     <div className="p-8 flex flex-col gap-6">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-medium text-text-primary">Transações</h1>
           <p className="text-sm text-text-secondary mt-1">
-            {data?.totalElements ?? 0} registros encontrados
+            {totalElements > 0
+              ? `${totalElements} registros no total`
+              : 'Nenhum registro ainda'}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => exportTransactionsCsv(startDate, endDate)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border-app text-sm text-text-secondary hover:text-text-primary hover:bg-bg-secondary transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border-app text-sm text-text-secondary hover:text-text-primary hover:bg-bg-card transition-all cursor-pointer"
           >
             <Download size={15} />
             Exportar CSV
           </button>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors cursor-pointer"
           >
             <Plus size={15} />
             Nova transação
@@ -143,16 +168,35 @@ export default function TransactionsPage() {
         </div>
       </div>
 
+      {/* Barra de busca local */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
+          <input
+            type="text"
+            placeholder="Buscar por descrição ou categoria..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-bg-card border border-border-app rounded-xl pl-9 pr-4 py-2 text-sm text-text-primary placeholder:text-text-secondary outline-none focus:border-accent/50 transition-all"
+          />
+        </div>
+        {search && (
+          <span className="text-xs text-text-secondary">
+            {filteredContent.length} resultado{filteredContent.length !== 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
+
       {/* Tabela */}
-      <div className="bg-bg-card border border-border-app rounded-xl overflow-hidden">
+      <div className="bg-bg-card border border-border-app rounded-2xl overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="border-b border-border-app">
-              <th className="text-left px-5 py-3 text-xs font-medium text-text-secondary">Descrição</th>
-              <th className="text-left px-5 py-3 text-xs font-medium text-text-secondary">Categoria</th>
-              <th className="text-left px-5 py-3 text-xs font-medium text-text-secondary">Data</th>
-              <th className="text-right px-5 py-3 text-xs font-medium text-text-secondary">Valor</th>
-              <th className="px-5 py-3" />
+              <th className="text-left px-5 py-3.5 text-xs font-medium text-text-secondary">Descrição</th>
+              <th className="text-left px-5 py-3.5 text-xs font-medium text-text-secondary">Categoria</th>
+              <th className="text-left px-5 py-3.5 text-xs font-medium text-text-secondary">Data</th>
+              <th className="text-right px-5 py-3.5 text-xs font-medium text-text-secondary">Valor</th>
+              <th className="px-5 py-3.5" />
             </tr>
           </thead>
           <tbody>
@@ -166,16 +210,22 @@ export default function TransactionsPage() {
                   <td className="px-5 py-4" />
                 </tr>
               ))
-            ) : data?.content.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-5 py-12 text-center text-sm text-text-secondary">
-                  Nenhuma transação encontrada.
-                </td>
-              </tr>
+            ) : filteredContent.length === 0 ? (
+              <EmptyState />
             ) : (
-              data?.content.map((tx) => (
-                <tr key={tx.id} className="border-b border-border-app last:border-0 hover:bg-bg-secondary/50 transition-colors">
-                  <td className="px-5 py-4 text-sm text-text-primary">{tx.description}</td>
+              filteredContent.map((tx) => (
+                <tr
+                  key={tx.id}
+                  className="border-b border-border-app last:border-0 hover:bg-white/[0.02] transition-colors"
+                >
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-1.5 h-8 rounded-full flex-shrink-0 ${
+                        tx.category.type === 'INCOME' ? 'bg-income' : 'bg-expense'
+                      }`} />
+                      <span className="text-sm text-text-primary">{tx.description}</span>
+                    </div>
+                  </td>
                   <td className="px-5 py-4">
                     <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
                       tx.category.type === 'INCOME'
@@ -185,23 +235,25 @@ export default function TransactionsPage() {
                       {tx.category.name}
                     </span>
                   </td>
-                  <td className="px-5 py-4 text-sm text-text-secondary">{formatDate(tx.transactionDate)}</td>
+                  <td className="px-5 py-4 text-sm text-text-secondary">
+                    {formatDate(tx.transactionDate)}
+                  </td>
                   <td className={`px-5 py-4 text-sm font-medium text-right ${
                     tx.category.type === 'INCOME' ? 'text-income' : 'text-expense'
                   }`}>
-                    {tx.category.type === 'INCOME' ? '+' : '-'} {formatCurrency(tx.amount)}
+                    {tx.category.type === 'INCOME' ? '+' : '−'} {formatCurrency(tx.amount)}
                   </td>
                   <td className="px-5 py-4">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => openEdit(tx)}
-                        className="p-1.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-secondary transition-colors cursor-pointer"
+                        className="p-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-secondary transition-colors cursor-pointer"
                       >
                         <Pencil size={14} />
                       </button>
                       <button
                         onClick={() => setDeleteConfirm(tx.id)}
-                        className="p-1.5 rounded-lg text-text-secondary hover:text-expense hover:bg-bg-secondary transition-colors cursor-pointer"
+                        className="p-2 rounded-lg text-text-secondary hover:text-expense hover:bg-expense/5 transition-colors cursor-pointer"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -215,7 +267,7 @@ export default function TransactionsPage() {
 
         {/* Paginação */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-border-app">
+          <div className="flex items-center justify-between px-5 py-3.5 border-t border-border-app">
             <span className="text-xs text-text-secondary">
               Página {page + 1} de {totalPages}
             </span>
@@ -242,22 +294,27 @@ export default function TransactionsPage() {
       {/* Modal criar/editar */}
       {modalOpen && (
         <div
-          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={(e) => e.target === e.currentTarget && closeModal()}
         >
-          <div className="bg-bg-card border border-border-app rounded-xl p-6 w-full max-w-md mx-4">
-            <h2 className="text-base font-medium text-text-primary mb-5">
-              {editing ? 'Editar transação' : 'Nova transação'}
-            </h2>
+          <div className="bg-bg-card border border-border-app rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded-xl bg-accent/10 flex items-center justify-center">
+                {editing ? <Pencil size={14} className="text-accent" /> : <Plus size={14} className="text-accent" />}
+              </div>
+              <h2 className="text-base font-medium text-text-primary">
+                {editing ? 'Editar transação' : 'Nova transação'}
+              </h2>
+            </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1.5">
                 <label className="text-sm text-text-secondary">Descrição</label>
                 <input
                   type="text"
                   placeholder="Ex: Supermercado"
-                  className="bg-bg-secondary border border-border-app rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary outline-none focus:ring-2 focus:ring-accent transition-all"
+                  className="bg-bg-secondary border border-border-app rounded-xl px-3 py-2.5 text-sm text-text-primary placeholder:text-text-secondary outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all"
                   {...register('description', { required: 'Descrição obrigatória' })}
                 />
                 {errors.description && (
@@ -265,13 +322,13 @@ export default function TransactionsPage() {
                 )}
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1.5">
                 <label className="text-sm text-text-secondary">Valor (R$)</label>
                 <input
                   type="number"
                   step="0.01"
                   placeholder="0,00"
-                  className="bg-bg-secondary border border-border-app rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary outline-none focus:ring-2 focus:ring-accent transition-all"
+                  className="bg-bg-secondary border border-border-app rounded-xl px-3 py-2.5 text-sm text-text-primary placeholder:text-text-secondary outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all"
                   {...register('amount', {
                     valueAsNumber: true,
                     required: 'Valor obrigatório',
@@ -283,11 +340,11 @@ export default function TransactionsPage() {
                 )}
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1.5">
                 <label className="text-sm text-text-secondary">Data</label>
                 <input
                   type="date"
-                  className="bg-bg-secondary border border-border-app rounded-lg px-3 py-2 text-sm text-text-primary outline-none focus:ring-2 focus:ring-accent transition-all"
+                  className="bg-bg-secondary border border-border-app rounded-xl px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all"
                   {...register('transactionDate', { required: 'Data obrigatória' })}
                 />
                 {errors.transactionDate && (
@@ -295,10 +352,10 @@ export default function TransactionsPage() {
                 )}
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1.5">
                 <label className="text-sm text-text-secondary">Categoria</label>
                 <select
-                  className="bg-bg-secondary border border-border-app rounded-lg px-3 py-2 text-sm text-text-primary outline-none focus:ring-2 focus:ring-accent transition-all"
+                  className="bg-bg-secondary border border-border-app rounded-xl px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-all"
                   {...register('categoryId', { required: 'Categoria obrigatória' })}
                 >
                   <option value="">Selecione uma categoria</option>
@@ -317,16 +374,16 @@ export default function TransactionsPage() {
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="flex-1 px-4 py-2.5 rounded-lg border border-border-app text-sm text-text-secondary hover:text-text-primary hover:bg-bg-secondary transition-colors cursor-pointer"
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-border-app text-sm text-text-secondary hover:text-text-primary hover:bg-bg-secondary transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer"
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer"
                 >
-                  {isSubmitting ? 'Salvando...' : editing ? 'Salvar' : 'Criar'}
+                  {isSubmitting ? 'Salvando...' : editing ? 'Salvar alterações' : 'Criar transação'}
                 </button>
               </div>
 
@@ -337,23 +394,28 @@ export default function TransactionsPage() {
 
       {/* Modal confirmar delete */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-bg-card border border-border-app rounded-xl p-6 w-full max-w-sm mx-4">
-            <h2 className="text-base font-medium text-text-primary mb-2">Excluir transação</h2>
-            <p className="text-sm text-text-secondary mb-5">
-              Tem certeza? Essa ação não pode ser desfeita.
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-bg-card border border-border-app rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-xl bg-expense/10 flex items-center justify-center">
+                <Trash2 size={14} className="text-expense" />
+              </div>
+              <h2 className="text-base font-medium text-text-primary">Excluir transação</h2>
+            </div>
+            <p className="text-sm text-text-secondary mb-6">
+              Tem certeza que deseja excluir? Essa ação não pode ser desfeita.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="flex-1 px-4 py-2.5 rounded-lg border border-border-app text-sm text-text-secondary hover:text-text-primary hover:bg-bg-secondary transition-colors cursor-pointer"
+                className="flex-1 px-4 py-2.5 rounded-xl border border-border-app text-sm text-text-secondary hover:text-text-primary hover:bg-bg-secondary transition-colors cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => deleteMutation.mutate(deleteConfirm)}
                 disabled={deleteMutation.isPending}
-                className="flex-1 px-4 py-2.5 rounded-lg bg-expense hover:bg-red-600 text-white text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-expense hover:bg-red-600 text-white text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {deleteMutation.isPending ? 'Excluindo...' : 'Excluir'}
               </button>
