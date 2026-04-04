@@ -127,7 +127,9 @@ export default function DashboardPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-medium text-text-primary">Dashboard</h1>
-          <p className="text-sm text-text-secondary mt-1 capitalize">{monthLabel}</p>
+          <p className="text-sm text-text-secondary mt-1">
+            {monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)}
+          </p>
         </div>
         <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium ${
           balancePositive

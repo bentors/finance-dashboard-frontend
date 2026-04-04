@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, ArrowLeftRight, Tag, LogOut, TrendingUp, Bell, Search } from 'lucide-react'
+import { LayoutDashboard, ArrowLeftRight, Tag, TrendingUp, Bell, Search, LogOut } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 
 const navItems = [
@@ -65,17 +65,6 @@ export default function AppLayout() {
           ))}
         </nav>
 
-        {/* Logout */}
-        <div className="p-3 border-t border-border-app">
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-text-secondary hover:text-expense hover:bg-expense/5 transition-all cursor-pointer"
-          >
-            <LogOut size={16} />
-            Sair da conta
-          </button>
-        </div>
-
       </aside>
 
       {/* Área principal */}
@@ -103,15 +92,20 @@ export default function AppLayout() {
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-accent" />
             </button>
 
-            {/* Usuário */}
+            {/* Usuário com logout no hover */}
             <div className="flex items-center gap-3 pl-3 border-l border-border-app">
               <div className="text-right">
                 <p className="text-sm font-medium text-text-primary leading-tight">{name}</p>
                 <p className="text-xs text-text-secondary leading-tight">Conta pessoal</p>
               </div>
-              <div className="w-9 h-9 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-accent text-sm font-medium">{initials}</span>
-              </div>
+              <button
+                onClick={handleLogout}
+                title="Sair da conta"
+                className="w-9 h-9 rounded-xl bg-accent/20 flex items-center justify-center flex-shrink-0 hover:bg-expense/10 hover:ring-1 hover:ring-expense/30 transition-all cursor-pointer group"
+              >
+                <span className="text-accent text-sm font-medium group-hover:hidden">{initials}</span>
+                <LogOut size={14} className="text-expense hidden group-hover:block" />
+              </button>
             </div>
 
           </div>
