@@ -60,17 +60,26 @@ export async function getMonthlySummary(year?: number) {
   return response.data
 }
 
-export async function searchTransactions(
-  params: {
-    description?: string
-    categoryId?: string
-    type?: CategoryType
-    page?: number
-    size?: number
-  }
-) {
+export async function searchTransactions(params: {
+  description?: string
+  categoryId?: string
+  type?: 'INCOME' | 'EXPENSE'
+  startDate?: string
+  endDate?: string
+  page?: number
+  size?: number
+}) {
+
+  console.log("Parâmetros recebidos do componente:", params);
+  const cleanParams = Object.fromEntries(
+    Object.entries({
+      ...params,
+      sort: 'transactionDate,desc',
+    }).filter(([, v]) => v !== undefined && v !== '')
+  )
+
   const response = await api.get<Page<TransactionResponseDTO>>('/transactions/search', {
-    params: { ...params, sort: 'transactionDate,desc' },
+    params: cleanParams,
   })
   return response.data
 }
